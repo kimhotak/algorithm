@@ -1,0 +1,3 @@
+def solution(n):
+    answer = ''.join('박'if i%2 else '수'for i in range(n))
+    return answer
