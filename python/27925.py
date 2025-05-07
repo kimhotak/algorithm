@@ -6,7 +6,7 @@ input = sys.stdin.readline
 n = int(input())
 foods = [i for i in map(int, input().split())]
 
-# bfs의 개념으로 접근
+# 다익스트라 개념으로 접근 (우선순위 큐 기반 최단 경로 탐색)
 # hq에 들어가는 거는 (비용, 음식 인덱스, 인덕션 상태)
 # 비용은 버튼 누른 수
 # visited에 사용했던것 (음식 인덱스, 인덕션 상태)에 비용 저장
