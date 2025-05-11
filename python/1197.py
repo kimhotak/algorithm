@@ -11,6 +11,8 @@ input = sys.stdin.readline
 # 가능하다.
 v, e = map(int, input().split())
 
+
+### 소팅이 아니라 우선순위 큐 쓰면 더 빨라질 수 있음
 graph = []
 # 가중치, 노드1, 노드2로 구성
 for _ in range(e):
