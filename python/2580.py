@@ -1,34 +1,30 @@
 import sys
-
 input = sys.stdin.readline
 
-table = [list(map(int, input().split())) for _ in range(9)]
+board = [list(map(int, input().split())) for _ in range(9)]
+zeros = [(i, j) for i in range(9) for j in range(9) if board[i][j] == 0]
 
-# dfs
-# 0의 위치를 잡는다.
-Y, X = [], []
-for i in range(9):
-    for j in range(9):
-        if table[i][j] == 0:
-            Y.append(i)
-            X.append(j)
+def is_valid(y, x, n):
+    for i in range(9):
+        if board[y][i] == n or board[i][x] == n:
+            return False
+    sy, sx = 3 * (y // 3), 3 * (x // 3)
+    for i in range(3):
+        for j in range(3):
+            if board[sy + i][sx + j] == n:
+                return False
+    return True
 
-# 0의 위치에 들어갈 수 있는 숫자들을 Z에 기록
-Z = []
-for y,x in zip(Y,X):
-    able = set(i for i in range(10))
-    able -= set(table[y])
-    able -= set(table[i][x] for i in range(9))
-    able -= set(table[(y//3)*3+j][(x//3)*3+i] for i in range(3) for j in range(3))
-    Z.append(list(able))
+def dfs(idx):
+    if idx == len(zeros):
+        for b in board:
+            print(' '.join(map(str, b)))
+        exit()
+    y, x = zeros[idx]
+    for i in range(1,10):
+        if is_valid(y, x, i):
+            board[y][x] = i
+            dfs(idx + 1)
+            board[y][x] = 0
 
-stack = [[]]
-while stack:
-    path = stack.pop()
-    if len(path) == len(Z):
-        Z = path
-        break
-    for next_node in Z[len(path)]:
-        if 
-        stack.append(path + [next_node])
-else:
+dfs(0)
