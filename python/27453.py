@@ -1,5 +1,4 @@
 import sys
-from collections import deque
 input = sys.stdin.readline
 n, m, k = map(int, input().split())
 start, end = None, None
@@ -24,11 +23,12 @@ print(start,end)
 dx = (0, 1, 0, -1)
 dy = (1, 0, -1, 0)
 
-# 이거 방문했을 때 거리 저장해야할듯 같은 불상사의 개수에서?
-short = [[[k for _ in range(m)] for _ in range(n)] for _ in range(k)]
+from collections import deque
+Q = deque()
+# 이전 좌표, 
+Q.append(start, 0, 0)
+# 좌표, 
+visited = set()
+visited.add((start, 0))
 
-q = deque()
-# 이동한거리, 막은 불상사 수, 이전 좌표
-q.append(0, 0, start)
-
-while q:
+while Q:
