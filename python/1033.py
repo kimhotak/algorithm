@@ -4,33 +4,33 @@ from collections import deque
 input = sys.stdin.readline
 
 n = int(input())
-
-graph = [[None] * n for i in range(n)]
+graph = [[] for _ in range(n)]
 for _ in range(n-1):
     a, b, p, q = map(int, input().split())
-    graph[a][b] = (p, q)
-    graph[b][a] = (q, p)
+    graph[a].append((b, p, q))
+    graph[b].append((a, q, p))
 
-#기준질량을 0으로 잡음
-base = [None] * n
-base[0] = (1, 1)
+# 기준 재료를 인덱스 0, visited처럼 활용
+ratio = [None] * n
+ratio[0] = [1, 1]
 
 Q = deque()
 Q.append(0)
 while Q:
-    node = Q.popleft()
-    for next_node, ratio in enumerate(graph[node]):
-        if not graph[node][next_node]:
+    a = Q.popleft()
+    for b, p, q in graph[a]:
+        if ratio[b]:
+            # 이미 기준재료 대비 비율 구한 경우
             continue
-        elif base[next_node]:
-            continue
-        base[next_node] = tuple(i*j for i,j in zip(base[node], graph[node][next_node]))
-        div = math.gcd(*base[next_node])
-        base[next_node] = tuple(i//div for i in base[next_node])
 
-        Q.append(next_node)
+        top = ratio[a][0] * p
+        bot = ratio[a][1] * q
+        gcd = math.gcd(top, bot)
+        ratio[b] = [top//gcd, bot//gcd]
 
-base[0] = math.lcm(*(b[0] for b in base))
-for i in range(1,n):
-    base[i] = base[0] // base[i][0] * base[i][1]
-print(' '.join(map(str,base)))
+        Q.append(b)
+
+lcm = math.lcm(*(top for top, bot in ratio))
+mass = [lcm // top * bot for top, bot in ratio]
+
+print(' '.join(map(str,mass)))
