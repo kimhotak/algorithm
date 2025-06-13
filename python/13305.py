@@ -2,9 +2,14 @@ import sys
 input = sys.stdin.readline
 
 n = int(input())
-# 도시 간 길의 거리
-road = [int(input()) for _ in range(n-1)]
-oil = [int(input()) for _ in range(n)]
+road = list(map(int,input().split()))
+oil_cost = list(map(int,input().split()))
 cost = 0
-cheap_oil = oil[0]
+cheap_oil = float('inf')
 
+for dist, oil in zip(road, oil_cost):
+    if oil < cheap_oil:
+        cheap_oil = oil
+    cost += cheap_oil * dist
+    
+print(cost)
