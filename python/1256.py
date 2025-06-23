@@ -1,16 +1,31 @@
 import sys
 input = sys.stdin.readline
-
 n, m, k = map(int,input().split())
-dp = [[1] * (n + 1) for _ in range(m + 1)]
+
+dp = [[1] * (m + 1) for _ in range(n + 1)]
+
 for a in range(1, n + 1):
     for z in range(1, m + 1):
-        dp[a][z]
+        dp[a][z] = dp[a-1][z] + dp[a][z-1]
 
+if k > dp[n][m]:
+    print(-1)
+    exit()
 
+answer = ""
 
+while n > 0 and m > 0:
 
+    if k <= dp[n-1][m]:
+        n -= 1
+        answer += 'a'
 
+    else:
+        k -= dp[n-1][m]
+        m -= 1
+        answer += 'z'
+
+print(answer + ('a' * n) + ('z' * m))
 
 
 '''
@@ -56,6 +71,4 @@ for a in range(1, n + 1):
         }
     }
 }
-a,z 중 한개가 1이 될떄까지 2개로 나누며 가는듯
-dp의 느낌으로 하면 
 '''
