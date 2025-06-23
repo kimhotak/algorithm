@@ -1,11 +1,21 @@
 import sys
 input = sys.stdin.readline
+
 n = int(input())
 m = int(input())
 s = input()
-string = 'I' + 'OI' * n
-cnt = 0
-for i in range(m-len(string)+1):
-    if s[i] == 'I' and s[i:i+len(string)] == string:
-        cnt += 1
-print(cnt)
+
+idx = 0
+answer = 0
+while idx < m:
+    if s[idx] == 'I':
+        cnt = 0
+        idx += 1
+        while idx < m and s[idx:idx+2] == 'OI':
+            cnt += 1
+            idx += 2
+        answer += max(0, cnt-n+1)
+    else:
+        idx += 1
+
+print(answer)
