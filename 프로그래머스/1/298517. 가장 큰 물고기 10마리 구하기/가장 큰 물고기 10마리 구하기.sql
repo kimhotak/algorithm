@@ -2,5 +2,5 @@ SELECT
     ID,
     LENGTH
 FROM fish_info
-ORDER BY length DESC
+ORDER BY length DESC, ID ASC
 LIMIT 10
