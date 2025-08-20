@@ -10,7 +10,7 @@ dist = [INF] * (n + 1)
 parent = [None] * (n + 1)
 dist[1] = 0
 
-for _ in range(m-1):
+for _ in range(n-1):
     updated = False
     for s, e, cost in edge:
         if dist[s] != INF and dist[s] + cost < dist[e]:
