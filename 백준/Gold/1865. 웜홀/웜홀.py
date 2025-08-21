@@ -20,7 +20,9 @@ for _ in range(tc):
     dist = [INF] * n
     while INF in dist:
         for i in range(n):
-            dist[i] = 0
+            if dist[i] == INF:
+                dist[i] = 0
+                break
 
         for i in range(n-1):
             for s, e, cost in edge:
