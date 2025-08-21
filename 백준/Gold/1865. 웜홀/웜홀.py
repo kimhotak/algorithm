@@ -17,15 +17,12 @@ for _ in range(tc):
         s, e, t = map(int, input().split())
         edge.append((s-1, e-1, -t))
 
-    dist = [INF] * n
-    while INF in dist:
-        for i in range(n):
-            dist[i] = 0
+    dist = [0] * n
 
-        for i in range(n-1):
-            for s, e, cost in edge:
-                if dist[s] != INF and dist[s] + cost < dist[e]:
-                    dist[e] = dist[s] + cost
+    for i in range(n-1):
+        for s, e, cost in edge:
+            if dist[s] != INF and dist[s] + cost < dist[e]:
+                dist[e] = dist[s] + cost
     
     isNegCycle = False
     for s, e, cost in edge:
