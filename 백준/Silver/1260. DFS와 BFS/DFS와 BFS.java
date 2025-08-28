@@ -25,14 +25,12 @@ public class Main {
             graph[b].add(a);
         }
 
-        for (int i = 1; i <= n; i ++) {
-            graph[i].sort((a, b) -> {
-                return b-a;
-            });
+        for (int i = 1; i <= n; i++) {
+            graph[i].sort(Integer::compare);
         }
 
         boolean[] visited = new boolean[n + 1];
-        Stack<Integer> stack = new Stack<>();
+        Deque<Integer> stack = new ArrayDeque<>();
         stack.push(v);
 
         while (!stack.isEmpty()) {
@@ -40,17 +38,12 @@ public class Main {
             if (visited[node]) continue;
             visited[node] = true;
             sb.append(node).append(' ');
-            for (int next : graph[node]) {
-                stack.push(next);
+            for (int i = graph[node].size()-1; i >= 0; i--) {
+                stack.push(graph[node].get(i));
             }
         }
 
         sb.append('\n');
-        for (int i = 1; i <= n; i ++) {
-            graph[i].sort((a, b) -> {
-                return a-b;
-            });
-        }
 
         visited = new boolean[n + 1];
         visited[v] = true;
