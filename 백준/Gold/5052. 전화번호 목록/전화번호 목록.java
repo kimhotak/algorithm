@@ -15,13 +15,7 @@ public class Main {
                 phoneNums[i] = br.readLine().strip();
             }
 
-            Arrays.sort(phoneNums, (a,b) -> {
-                int min = Math.min(a.length(), b.length());
-                int a_ = Integer.parseInt(a.substring(0, min));
-                int b_ = Integer.parseInt(b.substring(0, min));
-                if (a_ == b_) return Integer.compare(a.length(), b.length());
-                else return Integer.compare(a_, b_);
-            });
+            Arrays.sort(phoneNums);
 
             boolean is1 = true;
             for (int i = 0; i < n-1; i++) {
