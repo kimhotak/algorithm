@@ -6,12 +6,12 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringBuilder sb = new StringBuilder();
         int n = Integer.parseInt(br.readLine());
-        int[] dp = new int[n+1];
-        dp[0] = 1;
-        dp[1] = 1;
+        int a = 1, b = 1, c = 1;
         for (int i = 2; i <= n; i++) {
-            dp[i] = (dp[i-1] + 2 * dp[i-2]) % 10007;
+             c = (b + 2 * a) % 10007;
+             a = b;
+             b = c;
         }
-        System.out.print(dp[n]);
+        System.out.print(c);
     }
 }
