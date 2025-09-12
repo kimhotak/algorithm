@@ -11,33 +11,38 @@ public class Main {
         int m = Integer.parseInt(st.nextToken());
         int b = Integer.parseInt(st.nextToken());
 
-        int[][] ground = new int[n][m];
+        int[] count = new int[257];
+        int minH = 256, maxH = 0;
         for (int r = 0; r < n; r++) {
             st = new StringTokenizer(br.readLine());
             for (int c = 0; c < m; c++) {
-                ground[r][c] = Integer.parseInt(st.nextToken());
-            }
-        }
-//        System.out.print(255*500*500);
-//        63_750_000 완탐 가능?
-        int[] times = new int[257];
-        int[] blocks = new int[257];
-        for (int h = 0; h <= 256; h++) {
-            for (int r = 0; r < n; r++) {
-                for (int c = 0; c < m; c++) {
-                    int dif = ground[r][c] - h;
-                    times[h] += dif < 0 ? -dif : 2 * dif;
-                    blocks[h] += dif;
-                }
+                int h = Integer.parseInt(st.nextToken());
+                count[h]++;
+                if (h < minH) minH = h;
+                if (h > maxH) maxH = h;
             }
         }
 
-        int res = 0;
-        for (int h = 0; h <= 256; h++) {
-            if (b + blocks[h] < 0) continue;
-            if (times[res] >= times[h]) res = h;
+        int bestTime = Integer.MAX_VALUE;
+        int bestH = -1;
+
+        for (int toH = minH; toH <= maxH; toH++) {
+            int time = 0;
+            int block = b;
+            for (int fromH = minH; fromH <= maxH; fromH++) {
+                int k = count[fromH];
+                if (k == 0) continue;
+                int diff = fromH - toH;
+                time += (diff < 0 ? -1 : 2) * diff * k;
+                block += diff * k;
+            }
+            if (block < 0) continue;
+            if (time <= bestTime) {
+                bestTime = time;
+                bestH = toH;
+            }
         }
-        sb.append(times[res]).append(' ').append(res);
-        System.out.print(sb);
+
+        System.out.print(bestTime + " " + bestH);
     }
 }
