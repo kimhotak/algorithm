@@ -7,11 +7,11 @@ public class Main {
         StringBuilder sb = new StringBuilder();
         int n = Integer.parseInt(br.readLine());
         int[] dp = new int[n+1];
-        Arrays.fill(dp, 4);
         dp[0] = 0;
         dp[1] = 1;
 
         for (int i = 2; i <= n; i++) {
+            dp[i] = 5;
             for (int j = 1; j*j <= i; j++) {
                 if (dp[i] > dp[i - j*j]) dp[i] = dp[i - j*j];
             }
