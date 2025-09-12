@@ -6,27 +6,28 @@ public class Main {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringBuilder sb = new StringBuilder();
 
+        int n = Integer.parseInt(br.readLine());
+        ArrayDeque<Integer> fruit = new ArrayDeque<>();
+        ArrayDeque<Integer> count = new ArrayDeque<>();
         StringTokenizer st = new StringTokenizer(br.readLine());
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
-
-        st = new StringTokenizer(br.readLine());
-        int[] nums = new int[n];
         for (int i = 0; i < n; i++) {
-            nums[i] = Integer.parseInt(st.nextToken());
-        }
-
-        for (int i = 0; i < m; i++) {
-            st = new StringTokenizer(br.readLine());
-            int s = Integer.parseInt(st.nextToken());
-            int e = Integer.parseInt(st.nextToken());
-            int sum = 0;
-            for (int j = s - 1; j < e; j++) {
-                sum += nums[j];
+            int tmp = Integer.parseInt(st.nextToken());
+            if (!fruit.isEmpty() && fruit.peekLast() == tmp) {
+                count.addLast(count.pollLast()+1);
             }
-            sb.append(sum).append('\n');
+            else {
+                fruit.addLast(tmp);
+                count.addLast(1);
+            }
         }
 
-        System.out.print(sb);
+        n = fruit.size();
+        int res = 0;
+
+        for (int s = 0; s < n; s++) {
+            for (int e = 0; e < n; e++) {
+
+            }
+        }
     }
 }
