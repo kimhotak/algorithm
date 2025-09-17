@@ -7,10 +7,10 @@ public class Main {
         StringBuilder sb = new StringBuilder();
 
         StringTokenizer st = new StringTokenizer(br.readLine());
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
+        n = Integer.parseInt(st.nextToken());
+        m = Integer.parseInt(st.nextToken());
 
-        int[][] arr = new int[n][m];
+        arr = new int[n][m];
         for (int r = 0; r < n; r++){
             st = new StringTokenizer(br.readLine());
             for (int c = 0; c < m; c++) {
@@ -18,18 +18,36 @@ public class Main {
             }
         }
 
+
         int res = 0;
         for (int r = 0; r < n; r++) {
             for (int c = 0; c < m; c++) {
-                Deque<int[]> dq = new ArrayDeque<>();
-                dq.addLast(new int[]{r,c});
-                for (int i = 0; i < 3; i++) {
-                    Deque<int[]> tdq = new ArrayDeque<>();
-                    while (dq) {
-                        int[] cur =
-                    }
-                }
+                path.add(new int[]{r,c});
+                res = Math.max(res, dfs(r,c,arr[r][c]));
+                path.remove(new int[]{r,c});
             }
         }
+        System.out.print(res);
+    }
+    static int n;
+    static int m;
+    static int[][] arr;
+    static int[] dr = {-1,1,0,0}, dc = {0,0,-1,1};
+    static Set<int[]> path = new HashSet<>();
+
+    static int dfs(int r, int c, int score) {
+        if (path.size() >= 4) return score;
+        int res = 0;
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dr[i], nc = c + dc[i];
+            if (nr < 0 || n <= nr ||
+                    nc < 0 || m <= nc ||
+                    path.contains(new int[]{nr,nc})) continue;
+
+            path.add(new int[]{nr,nc});
+            res = Math.max(res, dfs(nr, nc, score + arr[nr][nc]));
+            path.remove(new int[]{nr,nc});
+        }
+        return res;
     }
 }
