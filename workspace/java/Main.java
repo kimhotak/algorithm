@@ -2,9 +2,6 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-
-    static int[] arr;
-
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringBuilder sb = new StringBuilder();
@@ -13,14 +10,22 @@ public class Main {
         int n = Integer.parseInt(st.nextToken());
         int m = Integer.parseInt(st.nextToken());
 
-        arr = new int[n];
-        st = new StringTokenizer(br.readLine());
+        int[][] grid = new int[n][m];
         for (int i = 0; i < n; i++) {
-            arr[i] = Integer.parseInt(st.nextToken());
+            st = new StringTokenizer(br.readLine());
+            for (int j = 0; j < m; j++) {
+                grid[i][j] = Integer.parseInt(st.nextToken());
+            }
         }
-        Arrays.sort(arr);
 
+        Deque<int[]> dq = new ArrayDeque<>();
+        // row, col, cost( 벽넘으면 음수)
+        dq.addLast(new int[]{0,0,0});
+        while (!dq.isEmpty()) {
+            int[] tmp = dq.pollFirst();
+            int row = tmp[0], col = tmp[1], cost = tmp[2];
+
+
+        }
     }
-
-    static void f(int cnt, )
 }
