@@ -2,33 +2,36 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
-
-    static int[] arr;
-    static int n;
-    static int m;
-    static StringBuilder sb;
-
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
         int n = Integer.parseInt(br.readLine());
-        int[] arr = new int[n + 1];
         StringTokenizer st = new StringTokenizer(br.readLine());
-        for (int i = 1; i <= n; i++) {
-            arr[i] = Integer.parseInt(st.nextToken());
+        int[] a = new int[n];
+        for (int i = 0; i < n; i++) {
+            a[i] = Integer.parseInt(st.nextToken());
         }
 
-        int res = 1;
-        int[] dp = new int[n + 1];
-        for (int i = 1; i <= n; i++) {
-            for (int j = 0; j < i; j++) {
-                if (arr[i] > arr[j] && dp[j] >= dp[i]) {
-                    dp[i] = dp[j] + 1;
+        List<Integer> tail = new ArrayList<>();
+        tail.add(a[0]);
+
+        for (int i = 1; i < n; i++) {
+            int left = 0, right = tail.size() - 1;
+            if(a[i] > tail.get(right)) {
+                tail.add(a[i]);
+                continue;
+            }
+
+            // 추후 이분 탐색으로 변경
+            for (int j = 0; j <= right; j++) {
+                if (a[i] <= tail.get(j)) {
+                    tail.set(j, a[i]);
+                    break;
                 }
             }
-            res = Math.max(res, dp[i]);
         }
-        System.out.print(res);
+
+        System.out.print(tail.size());
     }
 }
