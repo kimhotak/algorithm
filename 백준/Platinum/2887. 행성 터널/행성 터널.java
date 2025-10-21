@@ -62,15 +62,15 @@ public class Main {
 
         parent = new int[n];
         for (int i = 0; i < n; i++) parent[i] = i;
-        int res = 0;
+        int res = 0, cnt = 0;
 
-        while (!pq.isEmpty()) {
+        while (!pq.isEmpty() && cnt < n) {
             int[] tmp = pq.poll();
             int cost = tmp[0], a = tmp[1], b = tmp[2];
-            if (find(a) != find(b)){
+            if (union(a, b)){
                 // 루트 부모가 다를때, 다른 집합일 때
-                union(a, b);
                 res += cost;
+                cnt++;
             }
         }
 
