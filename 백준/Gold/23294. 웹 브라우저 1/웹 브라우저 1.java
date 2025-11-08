@@ -37,7 +37,7 @@ public class Main {
                 if (now != 0) back.addLast(now);
                 now = Integer.parseInt(st.nextToken());
                 cache += pageSize[now];
-                while (cache > c && !back.isEmpty()) cache -= pageSize[back.pollFirst()];
+                while (cache > c) cache -= pageSize[back.pollFirst()];
             }
             else if (op == 'C') {
                 Deque<Integer> tmp = new ArrayDeque<>();
