@@ -9,13 +9,12 @@ public class Main {
         String ex = br.readLine().strip();
         int stack = 0;
         int res = 0;
-        for (int i = 1; i < ex.length(); i++) {
-            if (ex.charAt(i-1) == '(' && ex.charAt(i) == ')') res += stack--;
-            else if (ex.charAt(i) == ')'){
-                res++;
+        for (int i = 0; i < ex.length(); i++) {
+            if (ex.charAt(i) == ')') {
                 stack--;
-            }
-            else stack++;
+                if (ex.charAt(i - 1) == '(') res += stack;
+                else res++;
+            } else stack++;
         }
         System.out.print(res);
     }
