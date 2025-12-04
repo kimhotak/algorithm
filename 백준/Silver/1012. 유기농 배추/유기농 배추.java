@@ -2,47 +2,55 @@ import java.io.*;
 import java.util.*;
 
 public class Main {
+    static final int[][] DIRS = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringBuilder sb = new StringBuilder();
+        
+        
 
-        int[] dx = {-1, 1, 0, 0};
-        int[] dy = {0, 0, -1, 1};
-        Deque<Point> dq = new ArrayDeque<>();
-
-        int testCase = Integer.parseInt(br.readLine());
-        for (int t = 0; t < testCase; t++) {
+        int T = Integer.parseInt(br.readLine());
+        
+        for (int t = 0; t < T; t++) {
             StringTokenizer st = new StringTokenizer(br.readLine());
-            int m = Integer.parseInt(st.nextToken());
-            int n = Integer.parseInt(st.nextToken());
+            int cols = Integer.parseInt(st.nextToken());
+            int rows = Integer.parseInt(st.nextToken());
             int k = Integer.parseInt(st.nextToken());
 
-            boolean[][] map = new boolean[n][m];
+            boolean[][] grid = new boolean[rows][cols];
 
             for (int i = 0; i < k; i++) {
                 st = new StringTokenizer(br.readLine());
-                int x = Integer.parseInt(st.nextToken());
-                int y = Integer.parseInt(st.nextToken());
-                map[y][x] = true;
+                int c = Integer.parseInt(st.nextToken());
+                int r = Integer.parseInt(st.nextToken());
+                grid[r][c] = true;
             }
 
             int bugCount = 0;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    if (!map[i][j]) continue;
-                    bugCount++;
-                    dq.addLast(new Point(i, j));
-                    map[i][j] = false;
-                    while (!dq.isEmpty()) {
-                        Point node = dq.pollFirst();
-                        for (int d  = 0; d < 4; d++) {
-                            Point next = new Point(node.y + dx[d], node.x + dy[d]);
-                            if (0 > next.x || next.x >= m ||
-                                0 > next.y || next.y >= n ||
-                                !map[next.y][next.x]) continue;
-                            map[next.y][next.x] = false;
+            Deque<int[]> q = new ArrayDeque<>();
 
-                            dq.addLast(next);
+            for (int r = 0; r < rows; r++) {
+                for (int c = 0; c < cols; c++) {
+                    if (!grid[r][c]) continue;
+
+                    bugCount++;
+                    grid[r][c] = false;
+                    q.addLast(new int[]{r, c});
+                    
+                    while (!q.isEmpty()) {
+                        int[] cur = q.pollFirst();
+                        int cr = cur[0], cc = cur[1];
+                        for (int[] d : DIRS) {
+                            int nr = cr + d[0];
+                            int nc = cc + d[1];
+
+                            if (0 > nr || nr >= rows ||
+                                0 > nc || nc >= cols ||
+                                !grid[nr][nc]) continue;
+
+                            grid[nr][nc] = false;
+                            q.addLast(new int[]{nr, nc});
                         }
                     }
                 }
@@ -50,14 +58,5 @@ public class Main {
             sb.append(bugCount).append('\n');
         }
         System.out.print(sb);
-    }
-}
-
-class Point{
-    public int x;
-    public int y;
-    public Point(int y, int x){
-        this.x = x;
-        this.y = y;
     }
 }
