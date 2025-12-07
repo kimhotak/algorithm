@@ -19,7 +19,7 @@ public class Main {
 
         int[] dr = {-1,1,0,0};
         int[] dc = {0,0,-1,1};
-        Queue<int[]> queue = new LinkedList<>();
+        Queue<int[]> queue = new ArrayDeque<>();
         st = new StringTokenizer(br.readLine());
 
         while (q-- > 0) {
