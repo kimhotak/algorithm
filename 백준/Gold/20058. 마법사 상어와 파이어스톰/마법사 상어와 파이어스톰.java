@@ -21,22 +21,22 @@ public class Main {
         int[] dc = {0,0,-1,1};
         Queue<int[]> queue = new ArrayDeque<>();
         st = new StringTokenizer(br.readLine());
+        int[][] tmpGrid = new int[n][n];
 
         while (q-- > 0) {
             int l = (int) Math.pow(2, Integer.parseInt(st.nextToken()));
             // rotate
-            int[][] tmp = new int[l][l];
             for (int lr = 0; lr < n; lr+= l) {
                 for (int lc = 0; lc < n; lc+= l) {
                     for (int sr = 0; sr < l; sr++) {
                         for (int sc = 0; sc < l; sc++) {
-                            tmp[sr][sc] = grid[lr+sr][lc+sc];
+                            tmpGrid[sr][sc] = grid[lr+sr][lc+sc];
                         }
                     }
 
                     for (int sr = 0; sr < l; sr++) {
                         for (int sc = 0; sc < l; sc++) {
-                            grid[lr+sr][lc+sc] = tmp[l -1-sc][sr];
+                            grid[lr+sr][lc+sc] = tmpGrid[l -1-sc][sr];
                         }
                     }
                 }
