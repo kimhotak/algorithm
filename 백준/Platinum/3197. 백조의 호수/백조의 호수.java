@@ -51,6 +51,7 @@ public class Main {
             for (int j = 0; j < c; j++) {
                 if (visited[i][j] || lake[i][j] == 'X') continue;
                 waterDeque.addLast(new int[]{i ,j});
+                visited[i][j] = true;
 
                 while (!waterDeque.isEmpty()) {
                     int[] cur = waterDeque.pollFirst();
