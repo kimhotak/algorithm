@@ -33,7 +33,7 @@ public class Main {
 
         while (!pq.isEmpty()) {
             int[] cur = pq.poll();
-            if (dist[cur[0]] > cur[1]) continue;
+            if (dist[cur[0]] < cur[1]) continue;
             for (int[] next: graph[cur[0]]) {
                 if (dist[next[0]] > dist[cur[0]] + next[1]) {
                     dist[next[0]] = dist[cur[0]] + next[1];
