@@ -8,19 +8,22 @@ public class Main {
         StringBuilder sb = new StringBuilder();
 
         int n = Integer.parseInt(br.readLine());
-        Set<String> set = new HashSet<>();
+        String[] arr = new String[n];
 
         for (int i = 0; i < n; i++) {
-            set.add(br.readLine());
+            arr[i] = br.readLine();
         }
 
-        List<String> arr = new ArrayList<>(set);
-        arr.sort((a,b)->{
+        Arrays.sort(arr, (a,b)->{
             if (a.length() != b.length()) return a.length() - b.length();
             else return a.compareTo(b);
         });
 
-        for (String s: arr) sb.append(s).append('\n');
+        sb.append(arr[0]).append('\n');
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i].equals(arr[i-1])) continue;
+            sb.append(arr[i]).append('\n');
+        }
 
         System.out.print(sb);
     }
