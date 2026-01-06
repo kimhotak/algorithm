@@ -30,7 +30,7 @@ public class Main {
             }
         }
 
-        if (sum != 0) sb.append(max).append('\n').append(cnt);
+        if (max != 0) sb.append(max).append('\n').append(cnt);
         else sb.append("SAD");
 
         System.out.print(sb);
