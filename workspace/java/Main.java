@@ -5,27 +5,36 @@ public class Main {
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         StringBuilder sb = new StringBuilder();
+        StringTokenizer st;
 
-        StringTokenizer st = new StringTokenizer(br.readLine());
-        int n = Integer.parseInt(st.nextToken());
-        int m = Integer.parseInt(st.nextToken());
+        int n = Integer.parseInt(br.readLine());
 
-        int[][] grid = new int[n][m];
+        st = new StringTokenizer(br.readLine());
+        int[] a = new int[n];
         for (int i = 0; i < n; i++) {
-            st = new StringTokenizer(br.readLine());
-            for (int j = 0; j < m; j++) {
-                grid[i][j] = Integer.parseInt(st.nextToken());
+            a[i] = Integer.parseInt(st.nextToken());
+        }
+
+        List<Integer> tail = new ArrayList<>();
+        tail.add(a[0]);
+
+        for (int i = 1; i < n; i++) {
+            int lo = 0, hi = tail.size() - 1;
+            if(a[i] > tail.get(hi)) {
+                tail.add(a[i]);
+                continue;
             }
+
+            while (lo <= hi) {
+                int mid = (lo + hi) / 2;
+                if (a[i] > tail.get(mid)) lo = mid + 1;
+                else hi = mid - 1;
+            }
+            tail.set(lo, a[i]);
         }
 
-        Deque<int[]> dq = new ArrayDeque<>();
-        // row, col, cost( 벽넘으면 음수)
-        dq.addLast(new int[]{0,0,0});
-        while (!dq.isEmpty()) {
-            int[] tmp = dq.pollFirst();
-            int row = tmp[0], col = tmp[1], cost = tmp[2];
+        sb.append(tail.size());
 
-
-        }
+        System.out.print(sb);
     }
 }
