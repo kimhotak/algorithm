@@ -1,462 +1,126 @@
-import json
 import os
-import re
-import subprocess
 import sys
-import time
-import urllib.error
-import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+import urllib.error
+import json
+import time
+import subprocess
 from datetime import datetime, timedelta, timezone
-from html.parser import HTMLParser
-from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+# --------------------------
+# [설정] 환경 변수에서 가져오기
+# --------------------------
+ATCODER_USERNAME = os.environ.get("ATCODER_USERNAME", "rlaghxkr") # 기본값
+ATCODER_SESSION = os.environ.get("ATCODER_SESSION") # 시크릿
 
-KST = timezone(timedelta(hours=9))
+# 403 에러 방지를 위한 핵심 헤더 (브라우저 위장 + 쿠키)
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Cookie': f'REVEL_SESSION={ATCODER_SESSION}' if ATCODER_SESSION else ''
+}
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-TOOL_DIR = REPO_ROOT / "tools" / "atcoder-submission-archiver"
-STATE_PATH = TOOL_DIR / "state.json"
-INDEX_PATH = TOOL_DIR / "index.json"
-OUTPUT_ROOT = REPO_ROOT / "AtCoder"
-OUTPUT_README = OUTPUT_ROOT / "README.md"
+API_URL = f"https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={ATCODER_USERNAME}&from_second=0"
 
-ATCODER_SUBMISSIONS_API = (
-    "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions"
-)
-
-
-CHROME_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/120.0.0.0 Safari/537.36"
-)
-
-
-@dataclass(frozen=True)
-class Submission:
-    id: int
-    epoch_second: int
-    problem_id: str
-    contest_id: str
-    language: str
-    result: str
-
-    @property
-    def sort_key(self) -> Tuple[int, int]:
-        return (self.epoch_second, self.id)
-
-
-class SubmissionCodeParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self._in_target_pre = False
-        self._code_parts: List[str] = []
-
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
-        if tag != "pre":
-            return
-        attrs_dict = dict(attrs)
-        if attrs_dict.get("id") == "submission-code":
-            self._in_target_pre = True
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "pre" and self._in_target_pre:
-            self._in_target_pre = False
-
-    def handle_data(self, data: str) -> None:
-        if self._in_target_pre:
-            self._code_parts.append(data)
-
-    def get_code(self) -> str:
-        return "".join(self._code_parts)
-
-
-def log(message: str) -> None:
-    print(message, flush=True)
-
-
-def load_json(path: Path, default: Any) -> Any:
-    if not path.exists():
-        return default
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def save_json(path: Path, data: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-
-def http_get(url: str, *, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> bytes:
-    merged_headers: Dict[str, str] = {"User-Agent": CHROME_USER_AGENT}
-    if headers:
-        merged_headers.update(headers)
-    req = urllib.request.Request(url, headers=merged_headers)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read()
-
-
-def http_get_with_retry(
-    url: str,
-    *,
-    headers: Optional[Dict[str, str]] = None,
-    timeout: int = 30,
-    retries: int = 5,
-    base_sleep: float = 1.0,
-) -> bytes:
-    last_exc: Optional[Exception] = None
-    for attempt in range(1, retries + 1):
-        try:
-            return http_get(url, headers=headers, timeout=timeout)
-        except urllib.error.HTTPError as exc:
-            last_exc = exc
-            status = getattr(exc, "code", None)
-            if status in (429, 500, 502, 503, 504):
-                sleep_s = base_sleep * (2 ** (attempt - 1))
-                log(f"HTTP {status} 재시도 {attempt}/{retries}: {url} (sleep {sleep_s:.1f}s)")
-                time.sleep(sleep_s)
-                continue
-            raise
-        except Exception as exc:
-            last_exc = exc
-            sleep_s = base_sleep * (2 ** (attempt - 1))
-            log(f"요청 실패 재시도 {attempt}/{retries}: {url} (sleep {sleep_s:.1f}s)")
-            time.sleep(sleep_s)
-            continue
-    assert last_exc is not None
-    raise last_exc
-
-
-def parse_submissions(raw: List[Dict[str, Any]]) -> List[Submission]:
-    submissions: List[Submission] = []
-    for item in raw:
-        try:
-            submissions.append(
-                Submission(
-                    id=int(item["id"]),
-                    epoch_second=int(item["epoch_second"]),
-                    problem_id=str(item["problem_id"]),
-                    contest_id=str(item["contest_id"]),
-                    language=str(item.get("language") or ""),
-                    result=str(item.get("result") or ""),
-                )
-            )
-        except Exception:
-            continue
-    submissions.sort(key=lambda s: s.sort_key)
-    return submissions
-
-
-def fetch_new_submissions(
-    user: str,
-    *,
-    last_epoch_second: int,
-    last_id: int,
-) -> List[Submission]:
-    params = f"?user={urllib.parse.quote(user)}&from_second={int(last_epoch_second)}"
-    url = ATCODER_SUBMISSIONS_API + params
-    log(f"제출 목록 조회: {url}")
-    raw_bytes = http_get_with_retry(url)
-    raw_json = json.loads(raw_bytes.decode("utf-8"))
-    submissions = parse_submissions(raw_json)
-
-    def is_new(s: Submission) -> bool:
-        if s.epoch_second > last_epoch_second:
-            return True
-        if s.epoch_second == last_epoch_second and s.id > last_id:
-            return True
-        return False
-
-    new_items = [s for s in submissions if is_new(s)]
-    return new_items
-
-
-def normalize_extension(language: str) -> str:
-    lang = language.strip()
-    if lang.startswith("C++"):
-        return ".cpp"
-    if lang.startswith("Python"):
-        return ".py"
-    if lang.startswith("Java"):
-        return ".java"
-    return ".txt"
-
-
-def task_slug(problem_id: str, contest_id: str) -> str:
-    prefix = contest_id + "_"
-    if problem_id.startswith(prefix):
-        return problem_id[len(prefix) :]
-    if "_" in problem_id:
-        return problem_id.split("_", 1)[1]
-    return problem_id
-
-
-def submission_url(contest_id: str, submission_id: int) -> str:
-    return f"https://atcoder.jp/contests/{contest_id}/submissions/{submission_id}"
-
-
-def extract_submission_code(html: str) -> str:
-    parser = SubmissionCodeParser()
-    parser.feed(html)
-    code = parser.get_code()
-    return code
-
-
-def download_code(submission: Submission, *, cookie: Optional[str]) -> Optional[str]:
-    url = submission_url(submission.contest_id, submission.id)
-    headers: Dict[str, str] = {
-        "User-Agent": CHROME_USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-    if cookie:
-        headers["Cookie"] = cookie
-
+def fetch_text(url):
+    """헤더를 포함하여 안전하게 URL 내용을 가져옵니다."""
     try:
-        html_bytes = http_get_with_retry(url, headers=headers)
-    except urllib.error.HTTPError as exc:
-        log(f"제출 페이지 접근 실패(HTTP {exc.code}): {url}")
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req) as res:
+            return res.read().decode('utf-8')
+    except urllib.error.HTTPError as e:
+        print(f"❌ 접속 실패 ({e.code}): {url}")
+        return None
+    except Exception as e:
+        print(f"❌ 오류 발생: {e}")
         return None
 
-    html = html_bytes.decode("utf-8", errors="replace")
-    code = extract_submission_code(html)
+def main():
+    print(f"🚀 [{ATCODER_USERNAME}] 님의 제출 기록 동기화 시작...")
+    
+    # 1. 시크릿 확인
+    if not ATCODER_SESSION:
+        print("⚠️ 경고: 'ATCODER_SESSION' 시크릿이 없습니다. 비공개 코드는 못 가져옵니다.")
 
-    code = code.replace("\r\n", "\n").replace("\r", "\n")
-    if not code.strip():
-        log(f"소스코드 추출 실패(비공개/로그인 필요 가능): {url}")
-        return None
-
-    if not code.endswith("\n"):
-        code += "\n"
-    return code
-
-
-def kst_string(epoch_second: int) -> str:
-    return datetime.fromtimestamp(epoch_second, tz=KST).strftime("%Y-%m-%d %H:%M")
-
-
-def ensure_parent(path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-
-def run_git(args: List[str], *, env: Optional[Dict[str, str]] = None) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["git", *args],
-        cwd=str(REPO_ROOT),
-        env={**os.environ, **(env or {})},
-        text=True,
-        capture_output=True,
-    )
-
-
-def has_staged_changes() -> bool:
-    proc = run_git(["diff", "--cached", "--quiet"])
-    return proc.returncode != 0
-
-
-def stage_files(paths: Iterable[Path]) -> None:
-    rels = [str(p.relative_to(REPO_ROOT)).replace("\\", "/") for p in paths]
-    if not rels:
+    # 2. API로 제출 목록 조회
+    data = fetch_text(API_URL)
+    if not data:
         return
-    proc = run_git(["add", "--", *rels])
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip())
 
+    submissions = json.loads(data)
+    # AC(정답)만 필터링 후, 오래된 순서대로 정렬
+    ac_subs = [s for s in submissions if s['result'] == 'AC']
+    ac_subs.sort(key=lambda x: x['epoch_second'])
 
-def commit_with_date(message: str, *, epoch_second: int) -> None:
-    # Git expects RFC 2822-ish / ISO-ish strings; ISO works.
-    dt = datetime.fromtimestamp(epoch_second, tz=timezone.utc)
-    date_str = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    env = {
-        "GIT_AUTHOR_DATE": date_str,
-        "GIT_COMMITTER_DATE": date_str,
-    }
-    proc = run_git(["commit", "-m", message], env=env)
-    if proc.returncode != 0:
-        out = (proc.stderr.strip() or proc.stdout.strip())
-        raise RuntimeError(out)
+    print(f"✨ 총 {len(ac_subs)}개의 정답 기록을 발견했습니다.")
+    
+    new_count = 0
+    for sub in ac_subs:
+        contest_id = sub['contest_id']
+        problem_id = sub['problem_id']
+        lang = sub['language']
+        
+        # 확장자 결정
+        ext = ".txt"
+        if "C++" in lang: ext = ".cpp"
+        elif "Python" in lang or "PyPy" in lang: ext = ".py"
+        elif "Java" in lang: ext = ".java"
+        elif "Kotlin" in lang: ext = ".kt"
+        elif "C#" in lang: ext = ".cs"
+        
+        # 저장 경로: AtCoder/대회명/문제명.확장자
+        save_dir = os.path.join("AtCoder", contest_id)
+        file_path = os.path.join(save_dir, f"{problem_id}{ext}")
 
-
-def safe_link(problem_id: str) -> str:
-    # problem_id is like abc389_a
-    if "_" in problem_id:
-        contest, task = problem_id.split("_", 1)
-        return f"https://atcoder.jp/contests/{contest}/tasks/{contest}_{task}"
-    return f"https://atcoder.jp/contests/{problem_id}/tasks/{problem_id}"
-
-
-def update_readme(index: Dict[str, Any]) -> None:
-    ensure_parent(OUTPUT_README)
-
-    items = list(index.values())
-    items.sort(key=lambda x: (int(x.get("epoch_second", 0)), int(x.get("submission_id", 0))), reverse=True)
-
-    lines: List[str] = []
-    lines.append("# AtCoder Ghost Archive\n")
-    lines.append("이 폴더는 자동 생성/갱신됩니다.\n")
-    lines.append("\n")
-    lines.append("| Problem | Result | Lang | Submitted(KST) | File |\n")
-    lines.append("| :-- | :--: | :-- | :-- | :-- |\n")
-
-    for it in items:
-        problem_id = it.get("problem_id", "")
-        url = safe_link(problem_id)
-        result = it.get("result", "")
-        lang = it.get("language", "")
-        epoch = int(it.get("epoch_second", 0))
-        submitted = kst_string(epoch) if epoch else ""
-        rel_path = it.get("path", "")
-        file_cell = f"`{rel_path}`" if rel_path else ""
-        lines.append(
-            f"| [{problem_id}]({url}) | {result} | {lang} | {submitted} | {file_cell} |\n"
-        )
-
-    OUTPUT_README.write_text("".join(lines), encoding="utf-8")
-
-
-def main() -> int:
-    user = os.environ.get("ATCODER_USER", "").strip()
-    if not user:
-        log("환경변수 ATCODER_USER 가 필요합니다.")
-        return 2
-
-    dry_run = os.environ.get("DRY_RUN", "").strip() == "1"
-
-    # AtCoder requires a browser-like User-Agent and usually a login cookie.
-    # ATCODER_REVEL_SESSION: REVEL_SESSION cookie value.
-    revel_value = os.environ.get("ATCODER_REVEL_SESSION", "").strip()
-    cookie = f"REVEL_SESSION={revel_value}" if revel_value else None
-    if not revel_value:
-        log(
-            "경고: ATCODER_REVEL_SESSION 이 비어있습니다. "
-            "AtCoder 제출 페이지 접근 시 403 Forbidden이 발생할 수 있습니다."
-        )
-
-    state = load_json(STATE_PATH, {"last_epoch_second": 0, "last_id": 0})
-    last_epoch_second = int(state.get("last_epoch_second", 0))
-    last_id = int(state.get("last_id", 0))
-
-    index: Dict[str, Any] = load_json(INDEX_PATH, {})
-
-    new_submissions = fetch_new_submissions(user, last_epoch_second=last_epoch_second, last_id=last_id)
-    if not new_submissions:
-        log("신규 제출이 없습니다.")
-        update_readme(index)
-        if not dry_run:
-            stage_files([OUTPUT_README])
-            if has_staged_changes():
-                commit_with_date("AtCoder ghost: update README", epoch_second=int(time.time()))
-        return 0
-
-    # Update state to max seen in new submissions (safe even if we fail later; but we commit state only at end)
-    max_s = max(new_submissions, key=lambda s: s.sort_key)
-
-    by_problem: Dict[str, List[Submission]] = {}
-    for s in new_submissions:
-        by_problem.setdefault(s.problem_id, []).append(s)
-
-    selected: List[Submission] = []
-    for problem_id, subs in by_problem.items():
-        subs.sort(key=lambda s: s.sort_key)
-
-        stored = index.get(problem_id)
-        if stored and stored.get("result") == "AC":
-            # first AC is already archived; ignore future submissions.
+        # 이미 파일이 존재하면 건너뜀 (중복 방지)
+        if os.path.exists(file_path):
             continue
 
-        ac_subs = [s for s in subs if s.result == "AC"]
-        if ac_subs:
-            best = min(ac_subs, key=lambda s: s.sort_key)
-        else:
-            best = max(subs, key=lambda s: s.sort_key)
+        print(f"📥 다운로드 중: {contest_id} - {problem_id}")
+        
+        # 3. 소스코드 상세 페이지 접속 (쿠키 사용)
+        code_url = f"https://atcoder.jp/contests/{contest_id}/submissions/{sub['id']}"
+        html = fetch_text(code_url)
+        
+        if html:
+            # HTML 파싱 (id="submission-code" 찾기)
+            marker = 'id="submission-code"'
+            idx = html.find(marker)
+            
+            if idx != -1:
+                # 코드 영역 추출
+                code_start = html.find('>', idx) + 1
+                code_end = html.find('</pre>', code_start)
+                raw_code = html[code_start:code_end]
+                
+                # HTML 특수문자(&lt; 등) 복원
+                import html as html_lib
+                final_code = html_lib.unescape(raw_code)
 
-        if stored and stored.get("result") != "AC":
-            stored_epoch = int(stored.get("epoch_second", 0))
-            stored_id = int(stored.get("submission_id", 0))
-            if best.result != "AC":
-                if (best.epoch_second, best.id) <= (stored_epoch, stored_id):
-                    continue
-
-        selected.append(best)
-
-    if not selected:
-        log("대표 제출로 갱신할 대상이 없습니다.")
-        state["last_epoch_second"] = max_s.epoch_second
-        state["last_id"] = max_s.id
-        save_json(STATE_PATH, state)
-        update_readme(index)
-        if not dry_run:
-            stage_files([STATE_PATH, OUTPUT_README, INDEX_PATH])
-            if has_staged_changes():
-                commit_with_date("AtCoder ghost: update state", epoch_second=int(time.time()))
-        return 0
-
-    selected.sort(key=lambda s: s.sort_key)
-
-    written_files: List[Path] = []
-
-    for s in selected:
-        ext = normalize_extension(s.language)
-        # 기존 AtCoder 풀이 파일 규칙(예: abc440_a.java)과 맞추기 위해 problem_id 기반으로 저장합니다.
-        # problem_id는 일반적으로 `<contest>_<task>` 형태입니다.
-        out_path = OUTPUT_ROOT / s.contest_id / f"{s.problem_id}{ext}"
-        ensure_parent(out_path)
-
-        log(f"다운로드: {s.problem_id} {s.result} {s.language} @ {kst_string(s.epoch_second)}")
-        code = download_code(s, cookie=cookie)
-        if code is None:
-            continue
-
-        # If file exists and identical, skip.
-        if out_path.exists():
-            existing = out_path.read_text(encoding="utf-8", errors="replace")
-            if existing == code:
-                log(f"변경 없음: {out_path}")
+                # 파일 저장
+                os.makedirs(save_dir, exist_ok=True)
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(final_code)
+                
+                # 4. 타임머신 커밋 (푼 날짜로 기록)
+                solve_time = datetime.fromtimestamp(sub['epoch_second'], timezone(timedelta(hours=9)))
+                time_str = solve_time.strftime('%Y-%m-%d %H:%M:%S')
+                
+                env = os.environ.copy()
+                env["GIT_AUTHOR_DATE"] = time_str
+                env["GIT_COMMITTER_DATE"] = time_str
+                
+                subprocess.run(["git", "add", file_path], check=True)
+                subprocess.run(["git", "commit", "-m", f"Add {contest_id} {problem_id}"], env=env, check=True)
+                
+                new_count += 1
+                time.sleep(1.5) # 서버 부하 방지 (중요!)
             else:
-                out_path.write_text(code, encoding="utf-8")
-                written_files.append(out_path)
-        else:
-            out_path.write_text(code, encoding="utf-8")
-            written_files.append(out_path)
+                print("   ⚠️ 코드를 찾을 수 없습니다. (비공개 상태)")
 
-        # Update index (even if file unchanged, metadata may change when transitioning to AC)
-        rel = out_path.relative_to(REPO_ROOT).as_posix()
-        index[s.problem_id] = {
-            "problem_id": s.problem_id,
-            "contest_id": s.contest_id,
-            "submission_id": s.id,
-            "epoch_second": s.epoch_second,
-            "result": s.result,
-            "language": s.language,
-            "path": rel,
-        }
-
-        if dry_run:
-            continue
-
-        # Commit per problem (time travel)
-        stage_files([out_path])
-        if has_staged_changes():
-            msg = f"AtCoder ghost: {s.problem_id} ({s.result}, {s.language})"
-            commit_with_date(msg, epoch_second=s.epoch_second)
-
-    # Persist state + index + README once.
-    state["last_epoch_second"] = max_s.epoch_second
-    state["last_id"] = max_s.id
-    save_json(STATE_PATH, state)
-    save_json(INDEX_PATH, index)
-    update_readme(index)
-
-    if not dry_run:
-        stage_files([STATE_PATH, INDEX_PATH, OUTPUT_README])
-        if has_staged_changes():
-            commit_with_date("AtCoder ghost: update index/state", epoch_second=int(time.time()))
-
-    log("완료")
-    return 0
-
+    if new_count > 0:
+        print(f"🎉 {new_count}개의 새로운 풀이를 저장했습니다!")
+    else:
+        print("🎉 최신 상태입니다. (새로운 풀이 없음)")
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

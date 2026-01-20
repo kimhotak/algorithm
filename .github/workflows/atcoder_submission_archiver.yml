@@ -1,46 +1,36 @@
-name: atcoder-submission-archiver
+name: AtCoder Archiver
 
 on:
-  workflow_dispatch:
-    inputs:
-      atcoder_user:
-        description: "AtCoder handle (optional)"
-        required: false
-        type: string
   schedule:
-    # 00:30 KST Sunday == 15:30 UTC Saturday
-    - cron: "30 15 * * 6"
+    - cron: '30 15 * * *' # 매일 한국시간 00:30
+  workflow_dispatch:      # 수동 실행 버튼
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  archive:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Configure git
-        run: |
-          git config user.name "kimhotak"
-          git config user.email "rlaghxkr@gmail.com"
+    - name: Run Archiver
+      env:
+        ATCODER_SESSION: ${{ secrets.ATCODER_SESSION }}
+        ATCODER_USERNAME: ${{ vars.ATCODER_USERNAME }}
+      run: |
+        git config --global user.name "kimhotak"
+        git config --global user.email "rlaghxkr@Gmail.com"
+        
+        python tools/atcoder-submission-archiver/sync.py
 
-      - name: Run Archiver
-        env:
-          ATCODER_REVEL_SESSION: ${{ secrets.ATCODER_REVEL_SESSION }}
-          ATCODER_USER: ${{ vars.ATCODER_USER }}
-        run: |
-          python tools/atcoder-submission-archiver/sync.py
-
-      - name: Push
-        run: |
-          git push
+    - name: Push changes
+      run: git push
