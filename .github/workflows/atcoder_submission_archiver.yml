@@ -34,11 +34,10 @@ jobs:
           git config user.name "kimhotak"
           git config user.email "rlaghxkr@gmail.com"
 
-      - name: Run sync
+      - name: Run Archiver
         env:
-          ATCODER_USER: ${{ inputs.atcoder_user || vars.ATCODER_USER }}
           ATCODER_REVEL_SESSION: ${{ secrets.ATCODER_REVEL_SESSION }}
-          ATCODER_SESSION: ${{ secrets.ATCODER_SESSION }}
+          ATCODER_USER: ${{ vars.ATCODER_USER }}
         run: |
           python tools/atcoder-submission-archiver/sync.py
 

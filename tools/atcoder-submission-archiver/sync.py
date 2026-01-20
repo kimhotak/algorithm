@@ -28,6 +28,13 @@ ATCODER_SUBMISSIONS_API = (
 )
 
 
+CHROME_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/120.0.0.0 Safari/537.36"
+)
+
+
 @dataclass(frozen=True)
 class Submission:
     id: int
@@ -83,7 +90,10 @@ def save_json(path: Path, data: Any) -> None:
 
 
 def http_get(url: str, *, headers: Optional[Dict[str, str]] = None, timeout: int = 30) -> bytes:
-    req = urllib.request.Request(url, headers=headers or {})
+    merged_headers: Dict[str, str] = {"User-Agent": CHROME_USER_AGENT}
+    if headers:
+        merged_headers.update(headers)
+    req = urllib.request.Request(url, headers=merged_headers)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
 
@@ -197,7 +207,9 @@ def extract_submission_code(html: str) -> str:
 def download_code(submission: Submission, *, cookie: Optional[str]) -> Optional[str]:
     url = submission_url(submission.contest_id, submission.id)
     headers: Dict[str, str] = {
-        "User-Agent": "atcoder-submission-archiver/0.1",
+        "User-Agent": CHROME_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
     }
     if cookie:
         headers["Cookie"] = cookie
@@ -312,14 +324,15 @@ def main() -> int:
 
     dry_run = os.environ.get("DRY_RUN", "").strip() == "1"
 
-    # Cookie: provide either ATCODER_REVEL_SESSION or ATCODER_SESSION
-    revel = os.environ.get("ATCODER_REVEL_SESSION", "").strip()
-    session = os.environ.get("ATCODER_SESSION", "").strip()
-    cookie = None
-    if revel:
-        cookie = f"REVEL_SESSION={revel}"
-    elif session:
-        cookie = session  # user can pass full Cookie header value
+    # AtCoder requires a browser-like User-Agent and usually a login cookie.
+    # ATCODER_REVEL_SESSION: REVEL_SESSION cookie value.
+    revel_value = os.environ.get("ATCODER_REVEL_SESSION", "").strip()
+    cookie = f"REVEL_SESSION={revel_value}" if revel_value else None
+    if not revel_value:
+        log(
+            "경고: ATCODER_REVEL_SESSION 이 비어있습니다. "
+            "AtCoder 제출 페이지 접근 시 403 Forbidden이 발생할 수 있습니다."
+        )
 
     state = load_json(STATE_PATH, {"last_epoch_second": 0, "last_id": 0})
     last_epoch_second = int(state.get("last_epoch_second", 0))
