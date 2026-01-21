@@ -24,8 +24,7 @@ jobs:
 
     - name: Run Archiver
       env:
-        ATCODER_SESSION: ${{ secrets.ATCODER_SESSION }}
-        ATCODER_USERNAME: ${{ vars.ATCODER_USERNAME }}
+        ATCODER_USER: ${{ vars.ATCODER_USER }}
       run: |
         git config --global user.name "kimhotak"
         git config --global user.email "rlaghxkr@Gmail.com"
