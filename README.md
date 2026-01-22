@@ -4,7 +4,7 @@
 
 - 백준 풀이는 [BaekjoonHub](https://github.com/BaekjoonHub/BaekjoonHub)로 자동 업로드됩니다.
 - AtCoder 풀이는 `AtCoder/` 아래에 정리합니다.
-- AtCoder 제출을 주기적으로 아카이빙해 `AtCoder/<contest>/` 및 `AtCoder/README.md`를 갱신하는 자동화 도구는 `tools/atcoder-submission-archiver/` 아래에 있습니다. (AtCoder Submission Archiver)
+- AtCoder 제출을 주기적으로 아카이빙해 `AtCoder/<contest>/`에 저장하는 자동화 도구는 `tools/atcoder-submission-archiver/` 아래에 있습니다. (AtCoder Submission Archiver)
 
 ## 폴더 구조
 
