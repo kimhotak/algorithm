@@ -1,5 +1,6 @@
 import os
 import sys
+import gzip
 import urllib.request
 import urllib.error
 import json
@@ -11,14 +12,25 @@ USER = os.environ.get("ATCODER_USER", "kimhotak")
 API_URL = f"https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={USER}&from_second=0"
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json,text/plain,*/*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
 }
 
 def fetch_text(url):
     try:
         req = urllib.request.Request(url, headers=HEADERS)
         with urllib.request.urlopen(req) as res:
-            return res.read().decode('utf-8')
+            raw = res.read()
+            enc = (res.headers.get("Content-Encoding") or "").lower()
+            if "gzip" in enc:
+                try:
+                    raw = gzip.decompress(raw)
+                except Exception:
+                    pass
+            return raw.decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         print(f"❌ 접속 실패 ({e.code}): {url}")
         return None
