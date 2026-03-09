@@ -1,25 +1,40 @@
 # algorithm
 
-알고리즘 풀이를 모아두는 저장소입니다.
+[![AtCoder Archiver](https://github.com/kimhotak/algorithm/actions/workflows/atcoder_submission_archiver.yml/badge.svg)](https://github.com/kimhotak/algorithm/actions/workflows/atcoder_submission_archiver.yml)
 
-- 백준 풀이는 [BaekjoonHub](https://github.com/BaekjoonHub/BaekjoonHub)로 자동 업로드됩니다.
-- AtCoder 풀이는 `AtCoder/` 아래에 정리합니다.
-- AtCoder 제출을 주기적으로 아카이빙해 `AtCoder/<contest>/`에 저장하는 자동화 도구는 `tools/atcoder-submission-archiver/` 아래에 있습니다. (AtCoder Submission Archiver)
+BaekjoonHub와 GitHub Actions를 활용해 **백준 / AtCoder 풀이를 자동 수집 및 아카이빙하는 알고리즘 저장소**입니다.
 
-## 폴더 구조
+---
 
-- `백준/` : 백준 문제 풀이 저장
-    - `Bronze/`, `Silver/`, `Gold/`, `Platinum/` : 난이도별 문제 폴더
+# Automation Highlights
 
-- `프로그래머스/` : 프로그래머스 문제 풀이 저장
-    - `0/` ~ `5/` : 레벨별 문제 폴더
+### Baekjoon
+- **BaekjoonHub** 브라우저 확장을 사용
+- 제출한 풀이가 GitHub에 **자동 업로드**
 
-- `AtCoder/` : AtCoder 문제 풀이 저장
+### AtCoder
+- **GitHub Actions**가 매일 실행
+- AtCoder 제출 목록을 조회
+- **AC (정답) 제출만 선별**
+- 제출 코드 자동 수집
+- `AtCoder/<contest>/` 구조로 저장
+- **제출 시각 기준으로 커밋 생성**
 
-- `workspace/` : 여러 환경에서 문제를 이어서 풀 때 사용하는 폴더
-    - `cpp/` : C++ 풀이 저장
-    - `python/` : Python 풀이 저장
-    - `java/` : Java 풀이 저장
+### Multi-language workspace
+로컬에서 여러 언어로 풀이를 작성할 수 있도록 작업 공간을 분리
 
-- `tools/` : 자동화 스크립트/도구
-    - AtCoder Submission Archiver: [tools/atcoder-submission-archiver/README.md](tools/atcoder-submission-archiver/README.md)
+- C++
+- Python
+- Java
+
+---
+
+# How it Works
+
+## Baekjoon
+
+1. BaekjoonHub 브라우저 확장을 통해 제출
+2. 제출 성공 시 GitHub 저장소에 자동 업로드
+3. 난이도별 폴더에 저장
+
+예시
